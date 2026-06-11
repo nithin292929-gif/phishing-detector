@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phishing Email Detector</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px 16px;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 36px;
+            width: 100%;
+            max-width: 560px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #111;
+        }
+
+        p.sub {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 24px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 7px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 12px;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #222;
+            border: 1px solid #ccc;
+        }
+
+        button.secondary:hover {
+            background: #f5f5f5;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 14px;
+            color: #111;
+            outline: none;
+            resize: vertical;
+            min-height: 140px;
+            margin-bottom: 12px;
+            font-family: 'Segoe UI', sans-serif;
+            transition: border 0.2s;
+        }
+
+        textarea:focus {
+            border-color: #555;
+        }
+
+        .divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 24px 0;
+        }
+
+        .status-box {
+            font-size: 13px;
+            border-radius: 6px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .status-box.info {
+            background: #f0f4ff;
+            border: 1px solid #ccd6f6;
+            color: #2c4aa8;
+        }
+
+        .status-box.success {
+            background: #f0faf4;
+            border: 1px solid #b6e5c8;
+            color: #1a7a40;
+        }
+
+        .status-box.error {
+            background: #fdf0ef;
+            border: 1px solid #f5c6c2;
+            color: #c0392b;
+        }
+
+        .metrics {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .stat {
+            flex: 1;
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 14px;
+        }
+
+        .stat .num {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .stat .lbl {
+            font-size: 12px;
+            color: #888;
+            margin-top: 2px;
+        }
+
+        .cm-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        table.cm {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        table.cm th {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        table.cm td {
+            padding: 8px 12px;
+            border: 1px solid #eee;
+            text-align: center;
+        }
+
+        .result-box {
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .result-box.phishing {
+            background: #fdf0ef;
+            border: 1px solid #f5c6c2;
+        }
+
+        .result-box.safe {
+            background: #f0faf4;
+            border: 1px solid #b6e5c8;
+        }
+
+        .result-box .verdict {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .result-box.phishing .verdict {
+            color: #c0392b;
+        }
+
+        .result-box.safe .verdict {
+            color: #1a7a40;
+        }
+
+        .result-box .confidence {
+            font-size: 13px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Phishing Email Detector</h1>
+        <p class="sub">Train a model then classify emails as phishing or safe</p>
+
+        <!-- Train Section -->
+        <button id="trainBtn" onclick="trainModel()">Train Model</button>
+
+        <div class="status-box" id="trainStatus"></div>
+
+        <div class="metrics" id="metrics">
+            <div class="stat">
+                <div class="num" id="accuracy">-</div>
+                <div class="lbl">Accuracy %</div>
+            </div>
+            <div class="stat">
+                <div class="num" id="totalEmails">-</div>
+                <div class="lbl">Emails Trained</div>
+            </div>
+        </div>
+
+        <div class="cm-title" id="cmTitle">Confusion Matrix</div>
+        <table class="cm" id="cmTable"></table>
+
+        <hr class="divider">
+
+        <!-- Predict Section -->
+        <p class="sub" style="margin-bottom:10px;">Paste email content below to classify it</p>
+        <textarea id="emailText" placeholder="Paste email text here..."></textarea>
+        <button class="secondary" onclick="classifyEmail()">Classify Email</button>
+
+        <div class="result-box" id="resultBox">
+            <div class="verdict" id="verdict"></div>
+            <div class="confidence" id="confidence"></div>
+        </div>
+    </div>
+
+    <script>
+        async function trainModel() {
+            const btn = document.getElementById("trainBtn");
+            btn.disabled = true;
+            btn.textContent = "Training...";
+
+            const status = document.getElementById("trainStatus");
+            status.className = "status-box info";
+            status.textContent = "Training model — this may take 30-60 seconds...";
+            status.style.display = "block";
+
+            try {
+                const res = await fetch("/train", { method: "POST" });
+                const d = await res.json();
+
+                if (d.error) {
+                    status.className = "status-box error";
+                    status.textContent = "Error: " + d.error;
+                    return;
+                }
+
+                status.className = "status-box success";
+                status.textContent = "Model trained successfully";
+
+                document.getElementById("accuracy").textContent = d.accuracy + "%";
+                document.getElementById("totalEmails").textContent = "5000+";
+                document.getElementById("metrics").style.display = "flex";
+
+                renderConfusionMatrix(d.confusion_matrix, d.labels);
+
+            } catch (e) {
+                status.className = "status-box error";
+                status.textContent = "Training failed. Check console for details.";
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Re-train Model";
+            }
+        }
+
+        function renderConfusionMatrix(cm, labels) {
+            const table = document.getElementById("cmTable");
+            let html = "<tr><th></th>";
+            labels.forEach(l => html += `<th>Predicted: ${l}</th>`);
+            html += "</tr>";
+            cm.forEach((row, i) => {
+                html += `<tr><th>Actual: ${labels[i]}</th>`;
+                row.forEach((val, j) => {
+                    const bg = i === j ? "#f0faf4" : "#fdf0ef";
+                    html += `<td style="background:${bg}">${val}</td>`;
+                });
+                html += "</tr>";
+            });
+            table.innerHTML = html;
+            table.style.display = "table";
+            document.getElementById("cmTitle").style.display = "block";
+        }
+
+        async function classifyEmail() {
+            const text = document.getElementById("emailText").value.trim();
+            if (!text) return;
+
+            const res = await fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text })
+            });
+
+            const d = await res.json();
+
+            if (d.error) {
+                alert(d.error);
+                return;
+            }
+
+            const box = document.getElementById("resultBox");
+            const isPhishing = d.prediction === "1" ||
+                d.prediction.toLowerCase().includes("spam") ||
+                d.prediction.toLowerCase().includes("phish");
+
+            box.className = "result-box " + (isPhishing ? "phishing" : "safe");
+            document.getElementById("verdict").textContent = isPhishing ? "Phishing / Spam" : "Safe";
+            document.getElementById("confidence").textContent = "Confidence: " + d.confidence + "%";
+            box.style.display = "block";
+        }
+    </script>
+</body>
+
+</html>
